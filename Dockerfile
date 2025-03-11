@@ -1,14 +1,24 @@
-# Sử dụng image Java 17 nhẹ nhất
-FROM eclipse-temurin:17-jdk-alpine
+# Stage 1: Build ứng dụng bằng Maven
+FROM eclipse-temurin:17-jdk-alpine AS build
 
-# Đặt thư mục làm việc trong container
 WORKDIR /app
 
-# Copy file JAR từ thư mục target vào container
-COPY target/*.jar app.jar
+# Copy toàn bộ mã nguồn vào container
+COPY . .
 
-# Expose cổng mà Spring Boot chạy
+# Build project và tạo file JAR
+RUN ./mvnw clean package -DskipTests
+
+# Stage 2: Chạy ứng dụng
+FROM eclipse-temurin:17-jre-alpine
+
+WORKDIR /app
+
+# Copy file JAR từ stage build sang stage run
+COPY --from=build /app/target/*.jar app.jar
+
+# Expose cổng Spring Boot
 EXPOSE 8080
 
-# Lệnh chạy ứng dụng
+# Chạy ứng dụng
 ENTRYPOINT ["java", "-jar", "app.jar"]
